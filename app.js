@@ -54,7 +54,7 @@ app.post('/start-new-project', async (req, res) => {
     } = req.body;
     
     console.log("Name: ", name);
-    
+
     const command = `./scripts/start-new.sh ${name}`;
     callTerminal(command, (code, message) => {
         if(code === 0) {
@@ -88,6 +88,6 @@ app.post("/cmc/:id", async (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log("middlemen Started on PORT: ", port);
+    console.log("Silkroad Started on PORT: ", port);
 });
   
