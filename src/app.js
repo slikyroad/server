@@ -64,16 +64,32 @@ app.post("/start-new-project", async (req, res) => {
   callTerminal(command, (code, message) => {
     if (code === 0) {
       fs.writeFileSync(`generated/${name}/.nftartmakerrc.json`, settings);
-      res.json({
-        status: 'success',
-        data: {
-          message: "New Project started successfully"
-        }
-      });
     } else {
       res.json(message);
     }
   });
+
+  res.json({
+    status: 'success',
+    data: {
+      message: "Starting new project...run [/status] to check status"
+    }
+  });  
+});
+
+app.get("/status/:name", async (req, res) => {  
+  const  name  = req.params.name;
+  if(!fs.existsSync(`generated/${name}/.nftartmakerrc.json`)) {
+    res.json({
+      status: "pending",
+    });
+
+    return;
+  } else {
+    res.json({
+      status: "completed",
+    });
+  }
 });
 
 app.get("/generate/:name", async (req, res) => {  
