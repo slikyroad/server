@@ -3,7 +3,8 @@
   "version": "1.1.1",
   "description": "HashLips Art Engine is a tool used to create multiple different instances of artworks based on provided layers.",
   "scripts": {
-    "start-server": "npx nodemon --ignore output app.js"
+    "start-server": "npx nodemon --ignore output app.js",
+    "generate": "npx nft-art-maker generate"
   },
   "author": "Olu",
   "license": "MIT",
