@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Web front-end for HashLips Art Engine",
   "scripts": {
-    "start": "npx nodemon --ignore output --ignore generated --ignore scripts --ignore layers app.js"
+    "start:dev": "npx nodemon --ignore output --ignore generated --ignore scripts --ignore layers app.js",
+    "start": "node app.js"
   },
   "author": "Olu",
   "license": "MIT",
