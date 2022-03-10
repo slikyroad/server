@@ -76,8 +76,19 @@ app.post("/start-new-project", async (req, res) => {
   });
 });
 
-app.get("/generate/:name", async (req, res) => {
+app.get("/generate/:name", async (req, res) => {  
   const  name  = req.params.name;
+  
+  if(!fs.existsSync(`generated/${name}`)) {
+    res.json({
+      status: "error",
+      data: {
+        message: 'You have to create a new project [/start-new-project] before generating nfts'
+      }
+    });
+
+    return;
+  }  
   const command = `./scripts/generate.sh ${name}`;
   callTerminal(command, (code, message) => {
     if (code === 0) {
@@ -101,7 +112,7 @@ app.get("/layers/:name", async (req, res) => {
     res.json({
       status: "error",
       data: {
-        message: 'You have to create a new project [/start-new-project] before uploading layers'
+        message: 'You have not generated any layers'
       }
     });
 
@@ -146,6 +157,16 @@ app.post("/upload-layers-file", async (req, res) => {
       }
 
       const layersDir = `generated/${fields.name}/layers`;
+      if(!fs.existsSync(`generated/${fields.name}`)) {
+        res.json({
+          status: "error",
+          data: {
+            message: 'You have to create a new project [/start-new-project] before uploading layers'
+          }
+        });
+    
+        return;
+      }       
       fs.rmSync(layersDir, { recursive: true, force: true });
       fs.mkdirSync(layersDir);
       const readStream = fs.createReadStream(newPath);
