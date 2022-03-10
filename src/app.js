@@ -14,6 +14,7 @@ const { exec } = require("child_process");
 
 const formidable = require("formidable");
 const unzipper = require("unzipper");
+const { checkStartNewProjectStatus, checkUploadLayersFileStatus, checkGenerateStatus } = require("./utils/process.utils");
 
 const callTerminal = (command, callback) => {
   exec(command, (err, stdout, stderr) => {
@@ -31,21 +32,7 @@ const callTerminal = (command, callback) => {
   });
 };
 
-app.get("/generate", (req, res) => {
-  // exec('rm -rf output && npx nft-art-maker generate', (error, stdout, stderr) => {
-  //     if (error) {
-  //         console.log(`error: ${error.message}`);
-  //         return;
-  //     }
-  //     if (stderr) {
-  //         console.log(`stderr: ${stderr}`);
-  //         return;
-  //     }
-  //     console.log(`stdout: ${stdout}`);
-  //     res.json({
-  //         status: 'success'
-  //     });
-  // });
+app.get("/", (req, res) => {
   res.json({
     status: "success",
   });
@@ -70,101 +57,33 @@ app.post("/start-new-project", async (req, res) => {
   });
 
   res.json({
-    status: 'success',
+    status: "success",
     data: {
-      message: "Starting new project...run [/status] to check status"
-    }
-  });  
-});
-
-app.get("/status/:name", async (req, res) => {  
-  const  name  = req.params.name;
-  if(!fs.existsSync(`generated/${name}/.nftartmakerrc.json`)) {
-    res.json({
-      status: "pending",
-    });
-
-    return;
-  } else {
-    res.json({
-      status: "completed",
-    });
-  }
-});
-
-app.get("/generate/:name", async (req, res) => {  
-  const  name  = req.params.name;
-  
-  if(!fs.existsSync(`generated/${name}`)) {
-    res.json({
-      status: "error",
-      data: {
-        message: 'You have to create a new project [/start-new-project] before generating nfts'
-      }
-    });
-
-    return;
-  }  
-  const command = `./scripts/generate.sh ${name}`;
-  callTerminal(command, (code, message) => {
-    if (code === 0) {
-      res.json({
-        status: 'success',
-        data: {
-          message: "NFTs generated successfully"
-        }
-      });
-    } else {
-      res.json(message);
-    }
+      message: "Starting new project...call [/status/:path/:name] to check status",
+    },
   });
-});
-
-app.get("/layers/:name", async (req, res) => {
-  const  name  = req.params.name;
-  const layersDir = `generated/${name}/layers`;    
-  
-  if(!fs.existsSync(layersDir)) {
-    res.json({
-      status: "error",
-      data: {
-        message: 'You have not generated any layers'
-      }
-    });
-
-    return;
-  }
-
-  const layers = fs.readdirSync(layersDir)
-  res.json({
-    status: 'success',
-    data: {
-      layers: layers
-    }
-  });  
 });
 
 app.post("/upload-layers-file", async (req, res) => {
   const form = new formidable.IncomingForm();
-  form.parse(req, (err, fields, files) => {    
+  form.parse(req, (err, fields, files) => {
     const projectDir = `generated/${fields.name}`;
-    
+
     const project = fs.readdirSync(projectDir);
 
-    if(project.indexOf('package.json') < 0 && project.indexOf('yarn.lock') < 0) {
+    if (project.indexOf("package.json") < 0 && project.indexOf("yarn.lock") < 0) {
       res.json({
         status: "error",
         data: {
-          message: 'You have to create a new project [/start-new-project] before uploading layers'
-        }
+          message: "You have to create a new project [/start-new-project] before uploading layers",
+        },
       });
 
       return;
     }
 
     const layersDir = `${projectDir}/layers`;
-    if(layersDir.indexOf())    
-    console.log("Fields: ", fields);
+    if (layersDir.indexOf()) console.log("Fields: ", fields);
     const oldPath = files.layers.filepath;
     const newPath = `/tmp/${files.layers.originalFilename}`;
     fs.rename(oldPath, newPath, (err) => {
@@ -172,50 +91,95 @@ app.post("/upload-layers-file", async (req, res) => {
         throw err;
       }
 
-      const layersDir = `generated/${fields.name}/layers`;
-      if(!fs.existsSync(`generated/${fields.name}`)) {
-        res.json({
-          status: "error",
-          data: {
-            message: 'You have to create a new project [/start-new-project] before uploading layers'
-          }
-        });
-    
-        return;
-      }       
       fs.rmSync(layersDir, { recursive: true, force: true });
       fs.mkdirSync(layersDir);
       const readStream = fs.createReadStream(newPath);
-      // close
-      readStream.pipe(unzipper.Extract({ path: layersDir }));            
-      readStream.on('close', () => {
-        res.json({
-          status: "success",
-          data: {
-            message: 'Layers uploaded successfully, call [/layers] to see your uploaded layers'
-          }
-        });
+
+      res.json({
+        status: "success",
+        data: {
+          message:
+            "Layers uploaded successfully, call [/layers] to see your uploaded layers, call [/status/:path/:name] to check the status. It might take a while to extract all your files depending on the size of your zipped file",
+        },
+      });
+
+      readStream.pipe(unzipper.Extract({ path: layersDir }));
+      readStream.on("close", () => {
+        fs.writeFileSync(`${layersDir}/.extracted`, "success");
       });
     });
   });
 });
 
-app.post("/cmc/:id", async (req, res) => {
-  const id = req.params.id;
-  const { url, cmcEncryptedKey } = req.body;
+app.post("/generate", async (req, res) => {
+  const { name } = req.body;
 
-  const passphrase = imdb[id];
-  const decryptedKey = CryptoJS.AES.decrypt(cmcEncryptedKey, passphrase).toString(CryptoJS.enc.Utf8);
+  if (!fs.existsSync(`generated/${name}`)) {
+    res.json({
+      status: "error",
+      data: {
+        message: "You have to create a new project [/start-new-project] before generating nfts",
+      },
+    });
 
-  const instance = axios.create({
-    headers: {
-      "X-CMC_PRO_API_KEY": decryptedKey,
+    return;
+  }
+
+  res.json({
+    status: "success",
+    data: {
+      message: "Generating NFTS...call [/status/:path/:name] to check the status.",
     },
   });
+  const command = `./scripts/generate.sh ${name}`;
+  callTerminal(command, (code, message) => {
+    if (code === 0) {
+      fs.writeFileSync(`generated/${name}/output/.generated`, "success");
+    }
+  });
+});
 
-  const response = await instance.get(url);
-  delete imdb[id];
-  res.json(response.data);
+app.get("/layers/:name", async (req, res) => {
+  const name = req.params.name;
+  const layersDir = `generated/${name}/layers`;
+
+  if (!fs.existsSync(layersDir)) {
+    res.json({
+      status: "error",
+      data: {
+        message: "You have not generated any layers",
+      },
+    });
+
+    return;
+  }
+
+  const layers = fs.readdirSync(layersDir);
+  res.json({
+    status: "success",
+    data: {
+      layers: layers,
+    },
+  });
+});
+
+app.get("/status/:process/:name", async (req, res) => {
+  const name = req.params.name;
+  const process = req.params.process;
+  switch (process) {
+    case "start-new-project":
+      checkStartNewProjectStatus(name, res);
+      break;
+    case "upload-layers-file":
+      checkUploadLayersFileStatus(name, res);
+      break;
+    case "generate":
+      checkGenerateStatus(name, res);
+      break;
+    default:
+      res.send("Unknown process.");
+      break;
+  }
 });
 
 app.listen(port, () => {
