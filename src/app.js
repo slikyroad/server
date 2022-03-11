@@ -14,8 +14,15 @@ const { exec } = require("child_process");
 
 const formidable = require("formidable");
 const unzipper = require("unzipper");
-const { checkStartNewProjectStatus, checkUploadLayersFileStatus, checkGenerateStatus } = require("./utils/process.utils");
-const {saveNewProject, getProject}=require("./utils/db");
+const {
+  checkStartNewProjectStatus,
+  checkUploadLayersFileStatus,
+  checkGenerateStatus,
+  doAuth,
+  uploadFilesToIpfs,
+  checkIpfsUploadStatus,
+} = require("./utils/utils");
+const { saveNewProject, getProject } = require("./utils/db");
 
 const callTerminal = (command, callback) => {
   exec(command, (err, stdout, stderr) => {
@@ -42,16 +49,16 @@ app.get("/", (req, res) => {
 app.post("/start-new-project", async (req, res) => {
   const { name } = req.body;
 
-  // if (fs.existsSync(`generated/${name}/.yarn.lock`)) {
-  //   res.json({
-  //     status: "error",
-  //     data: {
-  //       message: `a project with name [${name}]  already exists`,
-  //     },
-  //   });
+  if (fs.existsSync(`generated/${name}/.yarn.lock`)) {
+    res.json({
+      status: "error",
+      data: {
+        message: `a project with name [${name}]  already exists`,
+      },
+    });
 
-  //   return;
-  // }
+    return;
+  }
 
   req.body.svgBase64DataOnly = false;
 
@@ -71,13 +78,13 @@ app.post("/start-new-project", async (req, res) => {
   const password = crypto.randomInt(1000, 10000);
   const result = await saveNewProject(name, password);
 
-  if(!result) {
+  if (!result) {
     res.json({
       status: "error",
       data: {
         message: `Error saving project, please try again later`,
       },
-    });    
+    });
     return;
   }
 
@@ -93,18 +100,7 @@ app.post("/start-new-project", async (req, res) => {
 app.post("/upload-layers-file", async (req, res) => {
   const form = new formidable.IncomingForm();
   form.parse(req, async (err, fields, files) => {
-
-    const savedProject = await getProject(fields.name, fields.password);
-    if(!savedProject) {
-      res.json({
-        status: "error",
-        data: {
-          message: `Can not find project`,
-        },
-      });     
-      
-      return;
-    }
+    await doAuth(fields.name, fields.password, res);
 
     const projectDir = `generated/${fields.name}`;
 
@@ -153,17 +149,7 @@ app.post("/upload-layers-file", async (req, res) => {
 app.post("/generate", async (req, res) => {
   const { name, password } = req.body;
 
-  const savedProject = await getProject(name, password);
-  if(!savedProject) {
-    res.json({
-      status: "error",
-      data: {
-        message: `Can not find project`,
-      },
-    });     
-    
-    return;
-  }
+  await doAuth(name, password, res);
 
   if (!fs.existsSync(`generated/${name}/layers`)) {
     res.json({
@@ -191,7 +177,52 @@ app.post("/generate", async (req, res) => {
 });
 
 app.post("/post-to-ipfs", async (req, res) => {
-  const { name } = req.body;
+  const { name, password } = req.body;
+
+  await doAuth(name, password, res);
+
+  if (!fs.existsSync(`generated/${name}/output/.generated`)) {
+    res.json({
+      status: "error",
+      data: {
+        message: "You have not generated any NFTs. Call [/generate] to generate NFTs from your layers",
+      },
+    });
+
+    return;
+  }
+
+  res.json({
+    status: "success",
+    data: {
+      message: "Generating NFTs...call [/status/:path/:name] to check the status",
+    },
+  });
+
+  uploadFilesToIpfs(name);
+});
+
+app.get("/random-image/:name", async (req, res) => {
+  const { name } = req.params;
+  const project = await getProject(name, "", false);
+  const nfts = project.nfts;
+  const random = Math.floor(Math.random() * nfts.length);
+
+  res.json({
+    status: "success",
+    data: nfts[random],
+  });
+});
+
+app.get("/image/:name/:randomId", async (req, res) => {
+  const { name, randomId } = req.params;
+  const project = await getProject(name, "", false);
+  const nfts = project.nfts;
+
+  res.json({
+    status: "success",
+    data: nfts[randomId],
+  });
 });
 
 app.get("/layers/:name", async (req, res) => {
@@ -230,6 +261,9 @@ app.get("/status/:process/:name", async (req, res) => {
       break;
     case "generate":
       checkGenerateStatus(name, res);
+      break;
+    case "post-to-ipfs":
+      checkIpfsUploadStatus(name, res);
       break;
     default:
       res.send("Unknown process.");
