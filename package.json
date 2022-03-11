@@ -15,6 +15,7 @@
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
     "formidable": "^2.0.1",
+    "level": "^7.0.1",
     "nft-art-maker": "^5.1.0",
     "nodemon": "^2.0.15",
     "unzipper": "^0.10.11"

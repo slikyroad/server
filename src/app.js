@@ -15,6 +15,7 @@ const { exec } = require("child_process");
 const formidable = require("formidable");
 const unzipper = require("unzipper");
 const { checkStartNewProjectStatus, checkUploadLayersFileStatus, checkGenerateStatus } = require("./utils/process.utils");
+const {saveNewProject, getProject}=require("./utils/db");
 
 const callTerminal = (command, callback) => {
   exec(command, (err, stdout, stderr) => {
@@ -41,6 +42,17 @@ app.get("/", (req, res) => {
 app.post("/start-new-project", async (req, res) => {
   const { name } = req.body;
 
+  // if (fs.existsSync(`generated/${name}/.yarn.lock`)) {
+  //   res.json({
+  //     status: "error",
+  //     data: {
+  //       message: `a project with name [${name}]  already exists`,
+  //     },
+  //   });
+
+  //   return;
+  // }
+
   req.body.svgBase64DataOnly = false;
 
   const settings = JSON.stringify(req.body);
@@ -56,22 +68,49 @@ app.post("/start-new-project", async (req, res) => {
     }
   });
 
+  const password = crypto.randomInt(1000, 10000);
+  const result = await saveNewProject(name, password);
+
+  if(!result) {
+    res.json({
+      status: "error",
+      data: {
+        message: `Error saving project, please try again later`,
+      },
+    });    
+    return;
+  }
+
   res.json({
     status: "success",
     data: {
       message: "Starting new project...call [/status/:path/:name] to check status",
+      password: password,
     },
   });
 });
 
 app.post("/upload-layers-file", async (req, res) => {
   const form = new formidable.IncomingForm();
-  form.parse(req, (err, fields, files) => {
+  form.parse(req, async (err, fields, files) => {
+
+    const savedProject = await getProject(fields.name, fields.password);
+    if(!savedProject) {
+      res.json({
+        status: "error",
+        data: {
+          message: `Can not find project`,
+        },
+      });     
+      
+      return;
+    }
+
     const projectDir = `generated/${fields.name}`;
 
     const project = fs.readdirSync(projectDir);
 
-    if (project.indexOf("package.json") < 0 && project.indexOf("yarn.lock") < 0) {
+    if (project.indexOf("yarn.lock") < 0) {
       res.json({
         status: "error",
         data: {
@@ -112,13 +151,25 @@ app.post("/upload-layers-file", async (req, res) => {
 });
 
 app.post("/generate", async (req, res) => {
-  const { name } = req.body;
+  const { name, password } = req.body;
 
-  if (!fs.existsSync(`generated/${name}`)) {
+  const savedProject = await getProject(name, password);
+  if(!savedProject) {
     res.json({
       status: "error",
       data: {
-        message: "You have to create a new project [/start-new-project] before generating nfts",
+        message: `Can not find project`,
+      },
+    });     
+    
+    return;
+  }
+
+  if (!fs.existsSync(`generated/${name}/layers`)) {
+    res.json({
+      status: "error",
+      data: {
+        message: "You have to upload layers file [/upload-layers-file] before generating nfts",
       },
     });
 
@@ -139,6 +190,10 @@ app.post("/generate", async (req, res) => {
   });
 });
 
+app.post("/post-to-ipfs", async (req, res) => {
+  const { name } = req.body;
+});
+
 app.get("/layers/:name", async (req, res) => {
   const name = req.params.name;
   const layersDir = `generated/${name}/layers`;
@@ -154,7 +209,7 @@ app.get("/layers/:name", async (req, res) => {
     return;
   }
 
-  const layers = fs.readdirSync(layersDir);
+  const layers = fs.readdirSync(layersDir).map((dir) => fs.lstatSync(dir).isDirectory());
   res.json({
     status: "success",
     data: {

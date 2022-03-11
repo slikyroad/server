@@ -1,7 +1,7 @@
 const fs = require("fs");
 
 const checkStartNewProjectStatus = (name, res) => {
-  if (!fs.existsSync(`generated/${name}/.nftartmakerrc.json`)) {
+  if (!fs.existsSync(`generated/${name}/yarn.lock`)) {
     res.json({
       status: "pending",
     });
