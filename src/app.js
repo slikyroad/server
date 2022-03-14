@@ -225,6 +225,17 @@ app.get("/image/:name/:randomId", async (req, res) => {
   });
 });
 
+app.post("/images", async (req, res) => {
+  const { name, password } = req.body;
+  const project = await getProject(name, password);
+  const nfts = project.nfts;
+
+  res.json({
+    status: "success",
+    data: nfts,
+  });  
+});
+
 app.get("/layers/:name", async (req, res) => {
   const name = req.params.name;
   const layersDir = `generated/${name}/layers`;
