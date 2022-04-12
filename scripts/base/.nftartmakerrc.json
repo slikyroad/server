@@ -26,11 +26,5 @@
     "outputImagesCarFileName": "images.car",
     "outputMetadataCarFileName": "metadata.car",
     "editionNameFormat": "#",
-    "tags": "tag1,tag2,tag3",
-    "preview": {
-      "thumbPerRow": 20,
-      "thumbWidth": 60,
-      "imageRatio": 1,
-      "imageName": "preview.png"
-    }
+    "tags": "tag1,tag2,tag3"
   }

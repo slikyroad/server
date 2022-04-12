@@ -23,6 +23,7 @@ const {
   checkIpfsUploadStatus,
 } = require("./utils/utils");
 const { saveNewProject, getProject } = require("./utils/db");
+const { recoverPersonalSignature } = require("@metamask/eth-sig-util");
 
 const callTerminal = (command, callback) => {
   exec(command, (err, stdout, stderr) => {
@@ -47,13 +48,32 @@ app.get("/", (req, res) => {
 });
 
 app.post("/start-new-project", async (req, res) => {
-  const { name } = req.body;
+  const { name, hash, signature } = req.body;
 
-  if (fs.existsSync(`generated/${name}/.yarn.lock`)) {
+  const splitted = name.split("-");
+  const projectName = hash;
+  const blockchainAddress = splitted[1];
+
+  delete req.body.hash;
+  delete req.body.signature;
+
+  const recoveredAddress = recoverPersonalSignature({ data: hash, signature });
+  if (recoveredAddress.toLocaleLowerCase() !== blockchainAddress.toLocaleLowerCase()) {
     res.json({
       status: "error",
       data: {
-        message: `a project with name [${name}]  already exists`,
+        message: `Invalid Signature`,
+      },
+    });
+
+    return;
+  }
+
+  if (fs.existsSync(`generated/${projectName}/.yarn.lock`)) {
+    res.json({
+      status: "error",
+      data: {
+        message: `a project with name [${projectName}]  already exists`,
       },
     });
 
@@ -64,19 +84,16 @@ app.post("/start-new-project", async (req, res) => {
 
   const settings = JSON.stringify(req.body);
 
-  console.log("Name: ", name);
-
-  const command = `./scripts/start-new.sh ${name}`;
+  const command = `./scripts/start-new.sh ${projectName}`;
   callTerminal(command, (code, message) => {
     if (code === 0) {
-      fs.writeFileSync(`generated/${name}/.nftartmakerrc.json`, settings);
+      fs.writeFileSync(`generated/${projectName}/.nftartmakerrc.json`, settings);
     } else {
       res.json(message);
     }
   });
-
-  const password = crypto.randomInt(1000, 10000);
-  const result = await saveNewProject(name, password);
+  
+  const result = await saveNewProject(projectName, recoveredAddress, signature);
 
   if (!result) {
     res.json({
@@ -92,15 +109,14 @@ app.post("/start-new-project", async (req, res) => {
     status: "success",
     data: {
       message: "Starting new project...call [/status/:path/:name] to check status",
-      password: password,
     },
   });
 });
 
-app.post("/upload-layers-file", async (req, res) => {
+app.post("/upload-layers-file", async (req, res) => {  
   const form = new formidable.IncomingForm();
-  form.parse(req, async (err, fields, files) => {
-    await doAuth(fields.name, fields.password, res);
+  form.parse(req, async (_err, fields, files) => {
+    await doAuth(fields.name, fields.signature, res);
 
     const projectDir = `generated/${fields.name}`;
 
@@ -233,7 +249,7 @@ app.post("/images", async (req, res) => {
   res.json({
     status: "success",
     data: nfts,
-  });  
+  });
 });
 
 app.get("/layers/:name", async (req, res) => {

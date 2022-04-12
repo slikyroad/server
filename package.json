@@ -19,9 +19,10 @@
     "nft-art-maker": "^5.1.0",
     "nft.storage": "^6.0.2",
     "nodemon": "^2.0.15",
+    "@metamask/eth-sig-util": "^4.0.0",
     "unzipper": "^0.10.11"
   },
   "engines": {
-    "node": "14.17.5"
+    "node": "14.19.0"
   }
 }

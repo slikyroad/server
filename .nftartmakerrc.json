@@ -5,10 +5,6 @@
       {
         "growEditionSizeTo": 100,
         "layersOrder": [{ "name": "face" }, { "name": "head" }, { "name": "eyes" }]
-      },
-      {
-        "growEditionSizeTo": 110,
-        "layersOrder": [{ "name": "pinkyFace" }, { "name": "head" }, { "name": "eyes" }]
       }
     ],
     "shuffleLayerConfigurations": false,

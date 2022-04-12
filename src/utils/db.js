@@ -10,11 +10,12 @@ const db = level("./silkroad.db", {
  * @param {string} password
  * @returns if project is saved (true) or not (false)
  */
-const saveNewProject = async (name, password) => {
+const saveNewProject = async (name, password, signature) => {
   const nfts = [];
   const project = {
     name,
     password,
+    signature,
     nfts,
   };
 

@@ -59,9 +59,21 @@ const checkIpfsUploadStatus = (name, res) => {
   }
 };
 
-const doAuth = async (name, password, res) => {
-  const savedProject = await getProject(name, password);
-  if (!savedProject) {
+const doAuth = async (name, signature, res) => {
+  const recoveredAddress = recoverPersonalSignature({ data: name, signature });
+  if (recoveredAddress.toLocaleLowerCase() !== blockchainAddress.toLocaleLowerCase()) {
+    res.json({
+      status: "error",
+      data: {
+        message: `Invalid Signature`,
+      },
+    });
+
+    return;
+  }  
+
+  const savedProject = await getProject(name, recoveredAddress);
+  if (!savedProject || savedProject.signature !== signature) {
     res.json({
       status: "error",
       data: {
