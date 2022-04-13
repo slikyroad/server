@@ -1,5 +1,5 @@
 import level from 'level-ts';
-import { DBProject, Stage, Status } from './models';
+import { Project, Stage, Status } from './models';
 
 const db = new level('./silkroad.db');
 
@@ -10,21 +10,13 @@ const db = new level('./silkroad.db');
  * @param signature
  * @returns bool
  */
-export const saveNewProject = async (name: string, hash: string, wallet: string, signature: string): Promise<boolean> => {
+export const saveNewProject = async (dbProject): Promise<boolean> => {
   const nfts = [];
-  const project: DBProject = {
-    name,
-    hash,
-    signature,
-    wallet,
-    stage: Stage.NEW_PROJECT,
-    status: Status.PENDING,
-    nfts,
-  };
+  const project: Project = { ...dbProject, stage: Stage.NEW_PROJECT, status: Status.COMPLETED, nfts };
 
   let walletProjects = [];
   try {
-    walletProjects = await db.get(wallet);
+    walletProjects = await db.get(dbProject.wallet);
   } catch (_err) {}
 
   if (walletProjects && walletProjects.length > 0) {
@@ -33,7 +25,7 @@ export const saveNewProject = async (name: string, hash: string, wallet: string,
     walletProjects = [project];
   }
 
-  await db.put(wallet, walletProjects);
+  await db.put(dbProject.wallet, walletProjects);
 
   return true;
 };
@@ -45,7 +37,7 @@ export const saveNewProject = async (name: string, hash: string, wallet: string,
  * @param signature
  * @returns
  */
-export const getProject = async (hash: string, wallet: string, signature: string): Promise<DBProject> => {
+export const getProject = async (hash: string, wallet: string, signature: string): Promise<Project> => {
   try {
     const walletProjects = await db.get(wallet);
     if (walletProjects && walletProjects.length > 0) {
@@ -57,14 +49,32 @@ export const getProject = async (hash: string, wallet: string, signature: string
   }
 };
 
-export const getProjects = async (wallet: string): Promise<Array<DBProject>> => {
+export const getProjects = async (wallet: string): Promise<Array<Project>> => {
   try {
     const walletProjects = await db.get(wallet);
-    return walletProjects.map(pr => {
+    return walletProjects.map((pr) => {
       delete pr.signature;
       return pr;
     });
   } catch (_err) {
     return [];
   }
+};
+
+export const editProject = async (dbProject: Project): Promise<boolean> => {
+  let walletProjects = [];
+  try {
+    walletProjects = await db.get(dbProject.wallet);
+  } catch (_err) {}
+
+  if (walletProjects && walletProjects.length > 0) {
+    const index = walletProjects.findIndex((project) => project.hash === dbProject.hash && project.signature === dbProject.signature);
+    walletProjects[index] = dbProject;
+  } else {
+    return false;
+  }
+
+  await db.put(dbProject.wallet, walletProjects);
+
+  return true;
 };

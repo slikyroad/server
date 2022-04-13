@@ -41,6 +41,9 @@ export interface Project {
   outputImagesCarFileName: string;
   outputMetadataCarFileName: string;
   preview: Preview;
+  stage?: Stage;
+  status?: Status;
+  nfts: Array<any>;
 }
 
 export enum Stage {
@@ -49,14 +52,4 @@ export enum Stage {
 
 export enum Status {
     PENDING, COMPLETED, FAILED, START_NEW_BASH_COMPLETED
-}
-
-export interface DBProject {
-    name: string;
-    hash: string;
-    wallet: string;
-    signature: string;
-    stage: Stage,
-    status: Status,
-    nfts: Array<any>
 }

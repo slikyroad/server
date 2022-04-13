@@ -1,13 +1,40 @@
 import { recoverPersonalSignature } from '@metamask/eth-sig-util';
 import { Injectable, Logger } from '@nestjs/common';
 import { writeFileSync } from 'fs';
-import { getProject, getProjects, saveNewProject } from 'src/db';
-import { DBProject, Project } from 'src/models';
+import { editProject, getProject, getProjects, saveNewProject } from 'src/db';
+import { Project } from 'src/models';
 import { callTerminal } from 'src/utils';
 
 @Injectable()
 export class ProjectService {
   private readonly logger = new Logger(ProjectService.name);
+
+  editProject(project: Project): Promise<string> {
+    return new Promise(async (resolve, reject) => {
+      const recoveredAddress = recoverPersonalSignature({
+        data: project.hash,
+        signature: project.signature,
+      });
+
+      if (recoveredAddress.toLocaleLowerCase() !== project.wallet.toLocaleLowerCase()) {
+        reject('Can not verify user. Signing failed');
+      }
+
+      let dbProject = await getProject(project.hash, project.wallet, project.signature);
+
+      if (!dbProject) {
+        reject('Can not find project');
+      }
+
+      dbProject = { ...project };
+
+      if (await editProject(dbProject)) {
+        resolve('Settings Update Successful');
+      } else {
+        reject('Settings Update Failed.');
+      }
+    });
+  }
 
   startNewProject(project: Project): Promise<string> {
     return new Promise(async (resolve, reject) => {
@@ -16,18 +43,11 @@ export class ProjectService {
         signature: project.signature,
       });
 
-      if (
-        recoveredAddress.toLocaleLowerCase() !==
-        project.wallet.toLocaleLowerCase()
-      ) {
+      if (recoveredAddress.toLocaleLowerCase() !== project.wallet.toLocaleLowerCase()) {
         reject('Can not verify user. Signing failed');
       }
 
-      const dbProject = await getProject(
-        project.hash,
-        project.wallet,
-        project.signature,
-      );
+      let dbProject = await getProject(project.hash, project.wallet, project.signature);
 
       if (dbProject) {
         reject('Project with same name already exists for your account');
@@ -35,9 +55,7 @@ export class ProjectService {
 
       project.svgBase64DataOnly = false;
 
-      const hash = project.hash;
-      const signature = project.signature;
-      const wallet = project.wallet;
+      dbProject = { ...project };
 
       delete project.wallet;
       delete project.hash;
@@ -45,18 +63,13 @@ export class ProjectService {
 
       const settings = JSON.stringify(project);
 
-      const command = `./scripts/start-new.sh ${hash}`;
+      const command = `./scripts/start-new.sh ${dbProject.hash}`;
       callTerminal(
         command,
         (code, message) => {
           if (code === 0) {
-            writeFileSync(`generated/${hash}/.nftartmakerrc.json`, settings);
-            saveNewProject(
-              project.name,
-              hash,
-              wallet,
-              signature,
-            );
+            writeFileSync(`generated/${dbProject.hash}/.nftartmakerrc.json`, settings);
+            saveNewProject(dbProject);
           } else {
             resolve(message);
           }
@@ -68,7 +81,7 @@ export class ProjectService {
     });
   }
 
-  getProjects(wallet: string): Promise<Array<DBProject>> {
+  getProjects(wallet: string): Promise<Array<Project>> {
     return new Promise(async (resolve, reject) => {
       resolve(getProjects(wallet));
     });

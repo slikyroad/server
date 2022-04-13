@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { Project } from 'src/models';
 import { Response, ResponseUtils } from 'src/utils';
 import { ProjectService } from './project.service';
@@ -7,7 +7,13 @@ import { ProjectService } from './project.service';
 export class ProjectController {
     constructor(private service: ProjectService) {}
 
-    @Post('start')
+    @Put()
+    async editProject(@Body() project: Project): Promise<Response> {
+        const response = await this.service.editProject(project);
+        return ResponseUtils.getSuccessResponse([], response);
+    }
+
+    @Post()
     async startNewProject(@Body() project: Project): Promise<Response> {
         const response = await this.service.startNewProject(project);
         return ResponseUtils.getSuccessResponse([], response);
@@ -18,4 +24,5 @@ export class ProjectController {
         const projects = await this.service.getProjects(wallet);
         return ResponseUtils.getSuccessResponse(projects, "");
     }
+
 }
