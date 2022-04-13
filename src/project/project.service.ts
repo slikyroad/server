@@ -25,11 +25,9 @@ export class ProjectService {
 
       const dbProject = await getProject(
         project.hash,
-        recoveredAddress.toLocaleLowerCase(),
+        project.wallet,
         project.signature,
       );
-
-      this.logger.debug(`DB Project: ${dbProject}`);
 
       if (dbProject) {
         reject('Project with same name already exists for your account');
@@ -39,7 +37,9 @@ export class ProjectService {
 
       const hash = project.hash;
       const signature = project.signature;
+      const wallet = project.wallet;
 
+      delete project.wallet;
       delete project.hash;
       delete project.signature;
 
@@ -53,7 +53,7 @@ export class ProjectService {
             writeFileSync(`generated/${hash}/.nftartmakerrc.json`, settings);
             saveNewProject(
               hash,
-              recoveredAddress.toLocaleLowerCase(),
+              wallet,
               signature,
             );
           } else {

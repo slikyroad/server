@@ -10,22 +10,30 @@ const db = new level('./silkroad.db');
  * @param signature
  * @returns bool
  */
-export const saveNewProject = async (
-  name: string,
-  password: string,
-  signature: string,
-): Promise<boolean> => {
+export const saveNewProject = async (name: string, wallet: string, signature: string): Promise<boolean> => {
   const nfts = [];
   const project: DBProject = {
     name,
-    password,
     signature,
+    wallet,
     stage: Stage.NEW_PROJECT,
     status: Status.PENDING,
     nfts,
   };
 
-  await db.put(name, project);
+  let walletProjects = [];
+  try {
+    walletProjects = await db.get(wallet);
+  } catch (_err) {}
+
+
+  if (walletProjects && walletProjects.length > 0) {
+    walletProjects.push(project);
+  } else {
+    walletProjects = [project];
+  }
+
+  await db.put(wallet, walletProjects);
 
   return true;
 };
@@ -37,24 +45,19 @@ export const saveNewProject = async (
  * @param signature
  * @returns
  */
-export const getProject = async (
-  name: string,
-  password: string,
-  signature: string,
-): Promise<DBProject> => {
+export const getProject = async (name: string, wallet: string, signature: string): Promise<DBProject> => {
   try {
-    const project: DBProject = await db.get(name);
-    return project;
+    const walletProjects = await db.get(wallet);
+    if (walletProjects && walletProjects.length > 0) {
+      return walletProjects.find((project) => project.name === name && project.signature === signature);
+    }
+    return undefined;
   } catch (_err) {
     return undefined;
   }
 };
 
-export const updateProjectStatus = async (
-  status: Status,
-  stage: Stage,
-  name: string,
-) => {
+export const updateProjectStatus = async (status: Status, stage: Stage, name: string) => {
   const project: DBProject = await db.get(name);
   project.stage = stage;
   project.status = status;
