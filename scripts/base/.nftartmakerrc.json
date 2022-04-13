@@ -1,0 +1,30 @@
+{
+    "description": "Your collection name",
+    "svgBase64DataOnly": true,
+    "layerConfigurations": [
+      {
+        "growEditionSizeTo": 100,
+        "layersOrder": [{ "name": "face" }, { "name": "head" }, { "name": "eyes" }]
+      },
+      {
+        "growEditionSizeTo": 110,
+        "layersOrder": [{ "name": "pinkyFace" }, { "name": "head" }, { "name": "eyes" }]
+      }
+    ],
+    "shuffleLayerConfigurations": false,
+    "format": {
+      "width": 20,
+      "height": 20
+    },
+    "rarityDelimiter": "#",
+    "uniqueDnaTorrance": 10000,
+    "layersDirName": "layers",
+    "outputDirName": "output",
+    "outputJsonDirName": "json",
+    "outputImagesDirName": "images",
+    "outputJsonFileName": "metadata.json",
+    "outputImagesCarFileName": "images.car",
+    "outputMetadataCarFileName": "metadata.car",
+    "editionNameFormat": "#",
+    "tags": "tag1,tag2,tag3"
+  }

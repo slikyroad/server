@@ -1,0 +1,31 @@
+{
+  "name": "olu",
+  "description": "Your Awesome NFT Project",
+  "layerConfigurations": [
+    {
+      "growEditionSizeTo": 100,
+      "layersOrder": [{ "name": "face" }, { "name": "head" }, { "name": "eyes" }]
+    },
+    {
+      "growEditionSizeTo": 100,
+      "layersOrder": [
+        {
+          "name": "pinkyFace",
+          "options": {
+            "blend": "destinationIn",
+            "opacity": 0.2,
+            "displayName": "Awesome Face Color"
+          }
+        },
+        { "name": "head" },
+        { "name": "eyes" }
+      ]
+    }
+  ],
+  "shuffleLayerConfigurations": false,
+  "rarityDelimiter": "#",
+  "format": {
+    "width": 20,
+    "height": 20
+  }
+}
