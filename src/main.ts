@@ -9,6 +9,6 @@ async function bootstrap() {
   });
   app.enableCors();
   app.useGlobalFilters(new ExceptionsFilter());
-  await app.listen(process.env.PORT);
+  await app.listen(process.env.PORT || 9889);
 }
 bootstrap();
