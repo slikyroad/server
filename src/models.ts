@@ -53,6 +53,7 @@ export enum Status {
 
 export interface DBProject {
     name: string;
+    hash: string;
     wallet: string;
     signature: string;
     stage: Stage,

@@ -1,8 +1,8 @@
 import { recoverPersonalSignature } from '@metamask/eth-sig-util';
 import { Injectable, Logger } from '@nestjs/common';
 import { writeFileSync } from 'fs';
-import { getProject, saveNewProject } from 'src/db';
-import { Project } from 'src/models';
+import { getProject, getProjects, saveNewProject } from 'src/db';
+import { DBProject, Project } from 'src/models';
 import { callTerminal } from 'src/utils';
 
 @Injectable()
@@ -52,6 +52,7 @@ export class ProjectService {
           if (code === 0) {
             writeFileSync(`generated/${hash}/.nftartmakerrc.json`, settings);
             saveNewProject(
+              project.name,
               hash,
               wallet,
               signature,
@@ -64,6 +65,12 @@ export class ProjectService {
       );
 
       resolve('New Project Started Successfully. Status: PENDING');
+    });
+  }
+
+  getProjects(wallet: string): Promise<Array<DBProject>> {
+    return new Promise(async (resolve, reject) => {
+      resolve(getProjects(wallet));
     });
   }
 }
