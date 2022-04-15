@@ -32,6 +32,7 @@
     "@types/unzipper": "^0.10.5",
     "level": "^8.0.0",
     "level-ts": "^2.1.0",
+    "nft.storage": "^6.2.0",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^6.6.3",

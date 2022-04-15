@@ -51,6 +51,7 @@ export enum Stage {
   NEW_PROJECT,
   UPLOAD_LAYERS_FILE,
   GENERATE_NFTS,
+  UPLOAD_TO_IPFS,
 }
 
 export enum Status {

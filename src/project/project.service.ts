@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { writeFileSync } from 'fs';
 import { editProject, getProject, getProjects, saveNewProject } from 'src/db';
 import { Project, Stage, Status } from 'src/models';
-import { callTerminal } from 'src/utils';
+import { callTerminal, uploadFilesToIpfs } from 'src/project/utils/utils';
 
 @Injectable()
 export class ProjectService {
@@ -38,6 +38,41 @@ export class ProjectService {
     });
   }
 
+  uploadToIPFS(body: Project): Promise<string> {
+    return new Promise(async (resolve, reject) => {
+      const { hash, wallet, signature } = body;
+
+      const recoveredAddress = recoverPersonalSignature({
+        data: hash,
+        signature,
+      });
+
+      if (recoveredAddress.toLocaleLowerCase() !== wallet.toLocaleLowerCase()) {
+        reject('Can not verify user. Signing failed');
+        return;
+      }
+
+      let dbProject = await getProject(hash, wallet, signature);
+
+      if (!dbProject) {
+        reject('Can not find project');
+        return;
+      }
+
+      dbProject.status = Status.PENDING;
+      dbProject.stage = Stage.UPLOAD_TO_IPFS;
+      dbProject.statusMessage = '';
+
+      editProject(dbProject);
+
+      const nftStorageToken = process.env.NFT_STORAGE_TOKEN;
+      this.logger.debug(nftStorageToken);
+      uploadFilesToIpfs(dbProject, nftStorageToken);
+
+      resolve('Upload to IPFS Started Successfully');
+    });
+  }
+
   resetProject(body: Project): Promise<string> {
     return new Promise(async (resolve, reject) => {
       const { hash, wallet, signature } = body;
@@ -61,10 +96,10 @@ export class ProjectService {
 
       dbProject.status = Status.COMPLETED;
       dbProject.stage = Stage.NEW_PROJECT;
-      dbProject.statusMessage = "";
+      dbProject.statusMessage = '';
       await editProject(dbProject);
 
-      resolve("Project reset successfully");
+      resolve('Project reset successfully');
     });
   }
 
@@ -91,7 +126,7 @@ export class ProjectService {
 
       dbProject.stage = Stage.GENERATE_NFTS;
       dbProject.status = Status.PENDING;
-      dbProject.statusMessage = "";
+      dbProject.statusMessage = '';
       await editProject(dbProject);
 
       const command = `./scripts/generate.sh ${dbProject.hash}`;
@@ -104,7 +139,7 @@ export class ProjectService {
             editProject(dbProject);
           } else {
             dbProject.statusMessage = message;
-            editProject(dbProject);            
+            editProject(dbProject);
             resolve(message);
           }
         },
@@ -137,7 +172,7 @@ export class ProjectService {
       project.svgBase64DataOnly = false;
 
       dbProject = { ...project };
-      dbProject.statusMessage = "";
+      dbProject.statusMessage = '';
 
       delete project.wallet;
       delete project.hash;

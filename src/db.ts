@@ -81,3 +81,29 @@ export const editProject = async (dbProject: Project): Promise<boolean> => {
 
   return true;
 };
+
+export const addNFT = async (dbProject: Project, nft: any): Promise<boolean> => {
+  let walletProjects = [];
+  try {
+    walletProjects = await db.get(dbProject.wallet);
+  } catch (_err) {
+    console.log(_err);
+    return false;
+  }
+
+  if (walletProjects && walletProjects.length > 0) {
+    if (dbProject.nfts) {
+      dbProject.nfts.push(nft);
+    } else {
+      dbProject.nfts = [nft];
+    }
+    const index = walletProjects.findIndex((project) => project.hash === dbProject.hash && project.signature === dbProject.signature);
+    walletProjects[index] = dbProject;
+  } else {
+    return false;
+  }
+
+  await db.put(dbProject.wallet, walletProjects);
+
+  return true;
+};

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { Project } from 'src/models';
-import { Response, ResponseUtils } from 'src/utils';
+import { Response, ResponseUtils } from 'src/project/utils/utils';
 import { ProjectService } from './project.service';
 
 @Controller('project')
@@ -36,4 +36,10 @@ export class ProjectController {
     const response = await this.service.resetProject(body);
     return ResponseUtils.getSuccessResponse([], response);
   }
+
+  @Post('ipfs')
+  async uploadToIPFS(@Body() body: Project): Promise<Response> {
+    const response = await this.service.uploadToIPFS(body);
+    return ResponseUtils.getSuccessResponse([], response);
+  }  
 }
