@@ -65,7 +65,10 @@ export const editProject = async (dbProject: Project): Promise<boolean> => {
   let walletProjects = [];
   try {
     walletProjects = await db.get(dbProject.wallet);
-  } catch (_err) {}
+  } catch (_err) {
+    console.log(_err);
+    return false;
+  }
 
   if (walletProjects && walletProjects.length > 0) {
     const index = walletProjects.findIndex((project) => project.hash === dbProject.hash && project.signature === dbProject.signature);

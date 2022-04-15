@@ -9,7 +9,6 @@ export class ExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse();
     const request = ctx.getRequest();
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    this.logger.error("Error: ");
     this.logger.error(exception);
     let message = exception;
     if (exception.message) {

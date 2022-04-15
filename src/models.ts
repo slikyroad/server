@@ -43,13 +43,18 @@ export interface Project {
   preview: Preview;
   stage?: Stage;
   status?: Status;
+  statusMessage: string;
   nfts: Array<any>;
 }
 
 export enum Stage {
-    NEW_PROJECT, UPLOAD_LAYERS_FILE
+  NEW_PROJECT,
+  UPLOAD_LAYERS_FILE,
+  GENERATE_NFTS,
 }
 
 export enum Status {
-    PENDING, COMPLETED, FAILED
+  PENDING,
+  COMPLETED,
+  FAILED,
 }

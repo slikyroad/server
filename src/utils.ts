@@ -30,12 +30,15 @@ export const callTerminal = (command, callback, logger) => {
     if (err) {
       console.error(err);
       callback(-1, err.message);
+      return;
     }
 
     if (stderr) {
+      callback(-1, stderr);
       logger.error(stderr);
+      return;
     }
-
+    
     logger.log(stdout);
     callback(0, 'success');
   });

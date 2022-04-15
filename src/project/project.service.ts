@@ -2,7 +2,7 @@ import { recoverPersonalSignature } from '@metamask/eth-sig-util';
 import { Injectable, Logger } from '@nestjs/common';
 import { writeFileSync } from 'fs';
 import { editProject, getProject, getProjects, saveNewProject } from 'src/db';
-import { Project } from 'src/models';
+import { Project, Stage, Status } from 'src/models';
 import { callTerminal } from 'src/utils';
 
 @Injectable()
@@ -38,6 +38,83 @@ export class ProjectService {
     });
   }
 
+  resetProject(body: Project): Promise<string> {
+    return new Promise(async (resolve, reject) => {
+      const { hash, wallet, signature } = body;
+
+      const recoveredAddress = recoverPersonalSignature({
+        data: hash,
+        signature,
+      });
+
+      if (recoveredAddress.toLocaleLowerCase() !== wallet.toLocaleLowerCase()) {
+        reject('Can not verify user. Signing failed');
+        return;
+      }
+
+      let dbProject = await getProject(hash, wallet, signature);
+
+      if (!dbProject) {
+        reject('Can not find project');
+        return;
+      }
+
+      dbProject.status = Status.COMPLETED;
+      dbProject.stage = Stage.NEW_PROJECT;
+      dbProject.statusMessage = "";
+      await editProject(dbProject);
+
+      resolve("Project reset successfully");
+    });
+  }
+
+  generateNFTs(body: Project): Promise<string> {
+    return new Promise(async (resolve, reject) => {
+      const { hash, wallet, signature } = body;
+
+      const recoveredAddress = recoverPersonalSignature({
+        data: hash,
+        signature,
+      });
+
+      if (recoveredAddress.toLocaleLowerCase() !== wallet.toLocaleLowerCase()) {
+        reject('Can not verify user. Signing failed');
+        return;
+      }
+
+      let dbProject = await getProject(hash, wallet, signature);
+
+      if (!dbProject) {
+        reject('Can not find project');
+        return;
+      }
+
+      dbProject.stage = Stage.GENERATE_NFTS;
+      dbProject.status = Status.PENDING;
+      dbProject.statusMessage = "";
+      await editProject(dbProject);
+
+      const command = `./scripts/generate.sh ${dbProject.hash}`;
+
+      callTerminal(
+        command,
+        (code, message) => {
+          if (code === 0) {
+            dbProject.status = Status.COMPLETED;
+            editProject(dbProject);
+          } else {
+            dbProject.statusMessage = message;
+            editProject(dbProject);            
+            resolve(message);
+          }
+        },
+        this.logger,
+      );
+
+      resolve('NFT Generate Started Successfully. Status: PENDING');
+    });
+  }
+
   startNewProject(project: Project): Promise<string> {
     return new Promise(async (resolve, reject) => {
       const recoveredAddress = recoverPersonalSignature({
@@ -60,6 +137,7 @@ export class ProjectService {
       project.svgBase64DataOnly = false;
 
       dbProject = { ...project };
+      dbProject.statusMessage = "";
 
       delete project.wallet;
       delete project.hash;
@@ -75,6 +153,8 @@ export class ProjectService {
             writeFileSync(`generated/${dbProject.hash}/.nftartmakerrc.json`, settings);
             saveNewProject(dbProject);
           } else {
+            dbProject.statusMessage = message;
+            editProject(dbProject);
             resolve(message);
           }
         },

@@ -17,7 +17,7 @@ export class LayersService {
         return;
       }
 
-      const { name, hash, wallet, signature } = body;
+      const { hash, wallet, signature } = body;
 
       const recoveredAddress = recoverPersonalSignature({
         data: hash,
@@ -38,6 +38,7 @@ export class LayersService {
 
       dbProject.stage = Stage.UPLOAD_LAYERS_FILE;
       dbProject.status = Status.PENDING;
+      dbProject.statusMessage = "";
       await editProject(dbProject);
 
       const projectDir = `generated/${hash}`;
@@ -46,16 +47,15 @@ export class LayersService {
       rmSync(layersDir, { recursive: true, force: true });
       mkdirSync(layersDir);
 
-      const readStream = Readable.from(file.buffer);
-
-      resolve('File uploaded successfully. Status is PENDING');
+      const readStream = Readable.from(file.buffer);      
 
       readStream.pipe(Extract({ path: layersDir }));
-      readStream.on('close', () => {
-        writeFileSync(`${layersDir}/.extracted`, 'success');
+      readStream.on('close', () => {        
         dbProject.status = Status.COMPLETED;
         editProject(dbProject);
       });
+
+      resolve('File uploaded successfully. Status is PENDING');
     });
   }
 }
