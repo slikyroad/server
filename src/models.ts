@@ -47,9 +47,9 @@ export interface Project {
 }
 
 export enum Stage {
-    NEW_PROJECT
+    NEW_PROJECT, UPLOAD_LAYERS_FILE
 }
 
 export enum Status {
-    PENDING, COMPLETED, FAILED, START_NEW_BASH_COMPLETED
+    PENDING, COMPLETED, FAILED
 }

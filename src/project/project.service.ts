@@ -18,12 +18,14 @@ export class ProjectService {
 
       if (recoveredAddress.toLocaleLowerCase() !== project.wallet.toLocaleLowerCase()) {
         reject('Can not verify user. Signing failed');
+        return;
       }
 
       let dbProject = await getProject(project.hash, project.wallet, project.signature);
 
       if (!dbProject) {
         reject('Can not find project');
+        return;
       }
 
       dbProject = { ...project };
@@ -45,12 +47,14 @@ export class ProjectService {
 
       if (recoveredAddress.toLocaleLowerCase() !== project.wallet.toLocaleLowerCase()) {
         reject('Can not verify user. Signing failed');
+        return;
       }
 
       let dbProject = await getProject(project.hash, project.wallet, project.signature);
 
       if (dbProject) {
         reject('Project with same name already exists for your account');
+        return;
       }
 
       project.svgBase64DataOnly = false;
