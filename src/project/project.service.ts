@@ -30,6 +30,13 @@ export class ProjectService {
 
       dbProject = { ...project };
 
+      delete project.wallet;
+      delete project.hash;
+      delete project.signature;
+
+      const settings = JSON.stringify(project);      
+      writeFileSync(`generated/${dbProject.hash}/.nftartmakerrc.json`, settings);
+
       if (await editProject(dbProject)) {
         resolve('Settings Update Successful');
       } else {
