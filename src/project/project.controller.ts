@@ -41,5 +41,5 @@ export class ProjectController {
   async uploadToIPFS(@Body() body: Project): Promise<Response> {
     const response = await this.service.uploadToIPFS(body);
     return ResponseUtils.getSuccessResponse([], response);
-  }  
+  }
 }

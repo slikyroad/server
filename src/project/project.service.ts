@@ -34,7 +34,7 @@ export class ProjectService {
       delete project.hash;
       delete project.signature;
 
-      const settings = JSON.stringify(project);      
+      const settings = JSON.stringify(project);
       writeFileSync(`generated/${dbProject.hash}/.nftartmakerrc.json`, settings);
 
       if (await editProject(dbProject)) {
@@ -59,7 +59,7 @@ export class ProjectService {
         return;
       }
 
-      let dbProject = await getProject(hash, wallet, signature);
+      const dbProject = await getProject(hash, wallet, signature);
 
       if (!dbProject) {
         reject('Can not find project');
@@ -94,7 +94,7 @@ export class ProjectService {
         return;
       }
 
-      let dbProject = await getProject(hash, wallet, signature);
+      const dbProject = await getProject(hash, wallet, signature);
 
       if (!dbProject) {
         reject('Can not find project');
@@ -124,7 +124,7 @@ export class ProjectService {
         return;
       }
 
-      let dbProject = await getProject(hash, wallet, signature);
+      const dbProject = await getProject(hash, wallet, signature);
 
       if (!dbProject) {
         reject('Can not find project');

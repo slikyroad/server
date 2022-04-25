@@ -45,6 +45,7 @@ export interface Project {
   status?: Status;
   statusMessage: string;
   nfts: Array<any>;
+  colllection: string;
 }
 
 export enum Stage {
