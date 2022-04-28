@@ -22,6 +22,7 @@ export interface Preview {
 export interface Project {
   name: string;
   hash: string;
+  price: number;
   wallet: string;
   signature?: string;
   description?: string;

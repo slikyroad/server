@@ -33,6 +33,11 @@ export class ProjectService {
       delete project.wallet;
       delete project.hash;
       delete project.signature;
+      delete project.nfts;
+      delete project.status;
+      delete project.stage;
+      delete project.statusMessage;
+      delete project.price;
 
       const settings = JSON.stringify(project);
       writeFileSync(`generated/${dbProject.hash}/.nftartmakerrc.json`, settings);
@@ -184,6 +189,11 @@ export class ProjectService {
       delete project.wallet;
       delete project.hash;
       delete project.signature;
+      delete project.nfts;
+      delete project.status;
+      delete project.stage;
+      delete project.statusMessage;
+      delete project.price;
 
       const settings = JSON.stringify(project);
 
