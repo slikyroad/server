@@ -39,7 +39,14 @@ export class ProjectService {
       delete project.statusMessage;
       delete project.price;
 
+      let sumGrowEdition = 0;
+      project.layerConfigurations.forEach((lc) => {
+        lc.growEditionSizeTo = lc.growEditionSizeTo + sumGrowEdition;
+        sumGrowEdition = lc.growEditionSizeTo;
+      });
+
       const settings = JSON.stringify(project);
+      this.logger.debug(settings);
       writeFileSync(`generated/${dbProject.hash}/.nftartmakerrc.json`, settings);
 
       if (await editProject(dbProject)) {
