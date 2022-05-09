@@ -1,7 +1,7 @@
 import { recoverPersonalSignature } from '@metamask/eth-sig-util';
 import { Injectable, Logger } from '@nestjs/common';
 import { writeFileSync } from 'fs';
-import { editProject, getProject, getProjects, saveNewProject } from 'src/db';
+import { editProject, getProject, getProjects, getUserProjects, saveNewProject } from 'src/db';
 import { Project, Stage, Status } from 'src/models';
 import { callTerminal, uploadFilesToIpfs } from 'src/project/utils/utils';
 
@@ -46,7 +46,6 @@ export class ProjectService {
       });
 
       const settings = JSON.stringify(project);
-      this.logger.debug(settings);
       writeFileSync(`generated/${dbProject.hash}/.nftartmakerrc.json`, settings);
 
       if (await editProject(dbProject)) {
@@ -85,7 +84,6 @@ export class ProjectService {
       editProject(dbProject);
 
       const nftStorageToken = process.env.NFT_STORAGE_TOKEN;
-      this.logger.debug(nftStorageToken);
       uploadFilesToIpfs(dbProject, nftStorageToken);
 
       resolve('Upload to IPFS Started Successfully');
@@ -116,6 +114,8 @@ export class ProjectService {
       dbProject.status = Status.COMPLETED;
       dbProject.stage = Stage.NEW_PROJECT;
       dbProject.statusMessage = '';
+      dbProject.nfts = [];
+      dbProject.colllection = '';
       await editProject(dbProject);
 
       resolve('Project reset successfully');
@@ -202,6 +202,12 @@ export class ProjectService {
       delete project.statusMessage;
       delete project.price;
 
+      let sumGrowEdition = 0;
+      project.layerConfigurations.forEach((lc) => {
+        lc.growEditionSizeTo = lc.growEditionSizeTo + sumGrowEdition;
+        sumGrowEdition = lc.growEditionSizeTo;
+      });
+
       const settings = JSON.stringify(project);
 
       const command = `./scripts/start-new.sh ${dbProject.hash}`;
@@ -224,9 +230,15 @@ export class ProjectService {
     });
   }
 
-  getProjects(wallet: string): Promise<Array<Project>> {
+  getUserProjects(wallet: string): Promise<Array<Project>> {
     return new Promise(async (resolve, reject) => {
-      resolve(getProjects(wallet));
+      resolve(getUserProjects(wallet));
+    });
+  }
+
+  getProjects(): Promise<Array<Project>> {
+    return new Promise(async (resolve, reject) => {
+      resolve(getProjects());
     });
   }
 }

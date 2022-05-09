@@ -29,7 +29,7 @@ export class Response {
   data: any;
 }
 
-export const callTerminal = (command, callback, logger) => {  
+export const callTerminal = (command, callback, logger) => {
   exec(command, (err, stdout, stderr) => {
     if (err) {
       console.error(err);
@@ -42,7 +42,7 @@ export const callTerminal = (command, callback, logger) => {
       logger.error(stderr);
       return;
     }
-    
+
     logger.log(stdout);
     callback(0, 'success');
   });
@@ -62,7 +62,7 @@ export const uploadFilesToIpfs = async (body: Project, nftStorageToken) => {
     const imageUploadResult = await storeNftData(fileBlob, nftStorageToken);
 
     const jsonBlob = readFileSync(jsonFile, {
-      encoding: "utf-8",
+      encoding: 'utf-8',
     });
 
     const contents = JSON.parse(jsonBlob);
@@ -72,10 +72,10 @@ export const uploadFilesToIpfs = async (body: Project, nftStorageToken) => {
 
     const nft = {
       fileName: imageFiles[i],
-      image:  `${ipfsGateway}/${imageUploadResult.pin.cid}`,
-      metadata:  `${ipfsGateway}/${metaUploadResult.pin.cid}`
-    }
-    
+      image: `${ipfsGateway}/${imageUploadResult.pin.cid}`,
+      metadata: `${ipfsGateway}/${metaUploadResult.pin.cid}`,
+    };
+
     console.log(nft);
     await addNFT(body, nft);
     rmSync(imageFile);
@@ -83,7 +83,7 @@ export const uploadFilesToIpfs = async (body: Project, nftStorageToken) => {
   }
 
   body.status = Status.COMPLETED;
-  body.statusMessage = "";
+  body.statusMessage = '';
 
   editProject(body);
 };

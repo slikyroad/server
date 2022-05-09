@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Param, Post, Put } from '@nestjs/common';
 import { Project } from 'src/models';
 import { Response, ResponseUtils } from 'src/project/utils/utils';
 import { ProjectService } from './project.service';
@@ -20,8 +20,14 @@ export class ProjectController {
   }
 
   @Get(':wallet')
-  async getProjects(@Param('wallet') wallet: string): Promise<Response> {
-    const projects = await this.service.getProjects(wallet);
+  async getUserProjects(@Param('wallet') wallet: string): Promise<Response> {
+    const projects = await this.service.getUserProjects(wallet);
+    return ResponseUtils.getSuccessResponse(projects, '');
+  }
+
+  @Get()
+  async getProjects(): Promise<Response> {
+    const projects = await this.service.getProjects();
     return ResponseUtils.getSuccessResponse(projects, '');
   }
 

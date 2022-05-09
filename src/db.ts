@@ -49,7 +49,7 @@ export const getProject = async (hash: string, wallet: string, signature: string
   }
 };
 
-export const getProjects = async (wallet: string): Promise<Array<Project>> => {
+export const getUserProjects = async (wallet: string): Promise<Array<Project>> => {
   try {
     const walletProjects = await db.get(wallet);
     return walletProjects.map((pr) => {
@@ -59,6 +59,10 @@ export const getProjects = async (wallet: string): Promise<Array<Project>> => {
   } catch (_err) {
     return [];
   }
+};
+
+export const getProjects = async (): Promise<Array<Project>> => {
+  return db.all();
 };
 
 export const editProject = async (dbProject: Project): Promise<boolean> => {
