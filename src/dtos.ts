@@ -47,6 +47,13 @@ export interface Project {
   statusMessage: string;
   nfts: string;
   colllection: string;
+  cloudinaryFiles: Array<CloudinaryLayerImages>;
+  layersList: string;
+}
+
+export interface CloudinaryLayerImages {
+  layerName: string;
+  layerImages: Array<string>;
 }
 
 export enum Stage {

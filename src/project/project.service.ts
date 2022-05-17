@@ -35,6 +35,7 @@ export class ProjectService {
 
       dbProject = { ...project };
       dbProject.project = JSON.stringify(project);
+      dbProject.nfts = JSON.stringify(project.nfts);
 
       delete project.wallet;
       delete project.hash;
@@ -198,6 +199,11 @@ export class ProjectService {
 
       dbProject = { ...project };
       dbProject.statusMessage = '';
+      dbProject.nfts = '';
+      dbProject.status = Status.PENDING;
+      dbProject.stage = Stage.NEW_PROJECT;
+      dbProject.colllection = '';
+      dbProject.project = JSON.stringify(project);
 
       delete project.wallet;
       delete project.hash;
@@ -248,13 +254,21 @@ export class ProjectService {
     });
   }
 
-  findProject(hash: string, wallet: string, signature: string): Promise<DBProject> {
-    return this.projectRepository
+  async findProject(hash: string, wallet: string, signature: string): Promise<any> {
+    const project = await this.projectRepository
       .createQueryBuilder('project')
       .where('hash = :hash', { hash: hash })
       .andWhere('wallet = :wallet', { wallet: wallet })
       .andWhere('signature = :signature', { signature: signature })
       .getOne();
+    if (project) {
+      const parsed = JSON.parse(project.project.toString());
+      const mapped = { ...project, ...parsed };
+      mapped.project = '';
+      return mapped;
+    }
+
+    return undefined;
   }
 
   async updateProject(project: DBProject): Promise<DBProject> {
@@ -268,12 +282,24 @@ export class ProjectService {
     return this.projectRepository.save(cloned);
   }
 
-  _getProjects(): Promise<Array<DBProject>> {
-    return this.projectRepository.createQueryBuilder('project').getMany();
+  async _getProjects(): Promise<Array<any>> {
+    const projects = await this.projectRepository.createQueryBuilder('project').getMany();
+    return projects.map((project) => {
+      const parsed = JSON.parse(project.project.toString());
+      const mapped = { ...project, ...parsed };
+      mapped.project = project.project.toString();
+      return mapped;
+    });
   }
 
-  async _getUserProjects(wallet: string): Promise<Array<DBProject>> {
-    return this.projectRepository.createQueryBuilder('project').where('wallet = :wallet', { wallet: wallet }).getMany();
+  async _getUserProjects(wallet: string): Promise<Array<any>> {
+    const projects = await this.projectRepository.createQueryBuilder('project').where('wallet = :wallet', { wallet: wallet }).getMany();
+    return projects.map((project) => {
+      const parsed = JSON.parse(project.project.toString());
+      const mapped = { ...project, ...parsed };
+      mapped.project = project.project.toString();
+      return mapped;
+    });
   }
 
   async _addNewProject(project: DBProject): Promise<DBProject> {

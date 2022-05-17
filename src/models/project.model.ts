@@ -11,7 +11,7 @@ export class DBProject {
   hash: string;
   @Column()
   signature: string;
-  @Column()
+  @Column('blob')
   nfts: string; // json string of nfts array
   @Column()
   status: Status;
@@ -23,6 +23,6 @@ export class DBProject {
   price: number;
   @Column()
   colllection?: string;
-  @Column()
+  @Column('blob')
   project?: string; // json string of project
 }
