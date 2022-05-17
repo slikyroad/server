@@ -1,13 +1,18 @@
 import { recoverPersonalSignature } from '@metamask/eth-sig-util';
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { writeFileSync } from 'fs';
-import { editProject, getProject, getProjects, getUserProjects, saveNewProject } from 'src/db';
-import { Project, Stage, Status } from 'src/models';
+import { DBProject } from 'src/models/project.model';
 import { callTerminal, uploadFilesToIpfs } from 'src/project/utils/utils';
+import { Repository } from 'typeorm';
+import { cloneDeep } from 'lodash';
+import { Project, Stage, Status } from 'src/dtos';
 
 @Injectable()
 export class ProjectService {
   private readonly logger = new Logger(ProjectService.name);
+  @InjectRepository(DBProject)
+  private projectRepository: Repository<DBProject>;
 
   editProject(project: Project): Promise<string> {
     return new Promise(async (resolve, reject) => {
@@ -21,7 +26,7 @@ export class ProjectService {
         return;
       }
 
-      let dbProject = await getProject(project.hash, project.wallet, project.signature);
+      let dbProject = await this.findProject(project.hash, project.wallet, project.signature);
 
       if (!dbProject) {
         reject('Can not find project');
@@ -29,6 +34,7 @@ export class ProjectService {
       }
 
       dbProject = { ...project };
+      dbProject.project = JSON.stringify(project);
 
       delete project.wallet;
       delete project.hash;
@@ -48,7 +54,7 @@ export class ProjectService {
       const settings = JSON.stringify(project);
       writeFileSync(`generated/${dbProject.hash}/.nftartmakerrc.json`, settings);
 
-      if (await editProject(dbProject)) {
+      if (await this.updateProject(dbProject)) {
         resolve('Settings Update Successful');
       } else {
         reject('Settings Update Failed.');
@@ -70,7 +76,7 @@ export class ProjectService {
         return;
       }
 
-      const dbProject = await getProject(hash, wallet, signature);
+      const dbProject = await this.findProject(hash, wallet, signature);
 
       if (!dbProject) {
         reject('Can not find project');
@@ -81,10 +87,10 @@ export class ProjectService {
       dbProject.stage = Stage.UPLOAD_TO_IPFS;
       dbProject.statusMessage = '';
 
-      editProject(dbProject);
+      this.updateProject(dbProject);
 
       const nftStorageToken = process.env.NFT_STORAGE_TOKEN;
-      uploadFilesToIpfs(dbProject, nftStorageToken);
+      uploadFilesToIpfs(dbProject, nftStorageToken, this.projectRepository);
 
       resolve('Upload to IPFS Started Successfully');
     });
@@ -104,7 +110,7 @@ export class ProjectService {
         return;
       }
 
-      const dbProject = await getProject(hash, wallet, signature);
+      const dbProject = await this.findProject(hash, wallet, signature);
 
       if (!dbProject) {
         reject('Can not find project');
@@ -114,9 +120,9 @@ export class ProjectService {
       dbProject.status = Status.COMPLETED;
       dbProject.stage = Stage.NEW_PROJECT;
       dbProject.statusMessage = '';
-      dbProject.nfts = [];
+      dbProject.nfts = '';
       dbProject.colllection = '';
-      await editProject(dbProject);
+      await this.updateProject(dbProject);
 
       resolve('Project reset successfully');
     });
@@ -136,7 +142,7 @@ export class ProjectService {
         return;
       }
 
-      const dbProject = await getProject(hash, wallet, signature);
+      const dbProject = await this.findProject(hash, wallet, signature);
 
       if (!dbProject) {
         reject('Can not find project');
@@ -146,7 +152,7 @@ export class ProjectService {
       dbProject.stage = Stage.GENERATE_NFTS;
       dbProject.status = Status.PENDING;
       dbProject.statusMessage = '';
-      await editProject(dbProject);
+      await this.updateProject(dbProject);
 
       const command = `./scripts/generate.sh ${dbProject.hash}`;
 
@@ -155,12 +161,12 @@ export class ProjectService {
         (code, message) => {
           if (code === 0) {
             dbProject.status = Status.COMPLETED;
-            editProject(dbProject);
           } else {
             dbProject.statusMessage = message;
-            editProject(dbProject);
-            resolve(message);
           }
+
+          this.updateProject(dbProject);
+          resolve(dbProject.statusMessage);
         },
         this.logger,
       );
@@ -181,7 +187,7 @@ export class ProjectService {
         return;
       }
 
-      let dbProject = await getProject(project.hash, project.wallet, project.signature);
+      let dbProject = await this.findProject(project.hash, project.wallet, project.signature);
 
       if (dbProject) {
         reject('Project with same name already exists for your account');
@@ -216,10 +222,10 @@ export class ProjectService {
         (code, message) => {
           if (code === 0) {
             writeFileSync(`generated/${dbProject.hash}/.nftartmakerrc.json`, settings);
-            saveNewProject(dbProject);
+            this._addNewProject(dbProject);
           } else {
             dbProject.statusMessage = message;
-            editProject(dbProject);
+            this.updateProject(dbProject);
             resolve(message);
           }
         },
@@ -230,15 +236,47 @@ export class ProjectService {
     });
   }
 
-  getUserProjects(wallet: string): Promise<Array<Project>> {
+  getUserProjects(wallet: string): Promise<Array<DBProject>> {
     return new Promise(async (resolve, reject) => {
-      resolve(getUserProjects(wallet));
+      resolve(this._getUserProjects(wallet));
     });
   }
 
-  getProjects(): Promise<Array<Project>> {
+  getProjects(): Promise<Array<DBProject>> {
     return new Promise(async (resolve, reject) => {
-      resolve(getProjects());
+      resolve(this._getProjects());
     });
+  }
+
+  findProject(hash: string, wallet: string, signature: string): Promise<DBProject> {
+    return this.projectRepository
+      .createQueryBuilder('project')
+      .where('hash = :hash', { hash: hash })
+      .andWhere('wallet = :wallet', { wallet: wallet })
+      .andWhere('signature = :signature', { signature: signature })
+      .getOne();
+  }
+
+  async updateProject(project: DBProject): Promise<DBProject> {
+    const dbProject = await this.findProject(project.hash, project.wallet, project.signature);
+    if (!dbProject) {
+      throw new Error('Project not found');
+    }
+
+    const cloned = cloneDeep(project);
+    cloned.id = dbProject.id;
+    return this.projectRepository.save(cloned);
+  }
+
+  _getProjects(): Promise<Array<DBProject>> {
+    return this.projectRepository.createQueryBuilder('project').getMany();
+  }
+
+  async _getUserProjects(wallet: string): Promise<Array<DBProject>> {
+    return this.projectRepository.createQueryBuilder('project').where('wallet = :wallet', { wallet: wallet }).getMany();
+  }
+
+  async _addNewProject(project: DBProject): Promise<DBProject> {
+    return this.projectRepository.save(project);
   }
 }

@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Logger, Param, Post, Put } from '@nestjs/common';
-import { Project } from 'src/models';
+import { Project } from 'src/dtos';
 import { Response, ResponseUtils } from 'src/project/utils/utils';
 import { ProjectService } from './project.service';
 

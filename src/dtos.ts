@@ -24,8 +24,8 @@ export interface Project {
   hash: string;
   price: number;
   wallet: string;
-  signature?: string;
-  description?: string;
+  signature: string;
+  description: string;
   layerConfigurations: Array<LayersConfig>;
   format: Format;
   rarityDelimiter: string;
@@ -42,10 +42,10 @@ export interface Project {
   outputImagesCarFileName: string;
   outputMetadataCarFileName: string;
   preview: Preview;
-  stage?: Stage;
-  status?: Status;
+  stage: Stage;
+  status: Status;
   statusMessage: string;
-  nfts: Array<any>;
+  nfts: string;
   colllection: string;
 }
 

@@ -1,7 +1,8 @@
 import { exec } from 'child_process';
 import { readdirSync, readFileSync, rmSync } from 'fs';
-import { addNFT, editProject } from 'src/db';
-import { Project, Status } from '../../models';
+import { Status } from 'src/dtos';
+import { DBProject } from 'src/models/project.model';
+import { Repository } from 'typeorm';
 import { storeNftData } from './nft';
 
 export class Utils {
@@ -48,11 +49,12 @@ export const callTerminal = (command, callback, logger) => {
   });
 };
 
-export const uploadFilesToIpfs = async (body: Project, nftStorageToken) => {
+export const uploadFilesToIpfs = async (body: DBProject, nftStorageToken, repo: Repository<DBProject>) => {
   const imageFiles = readdirSync(`generated/${body.hash}/output/images`);
   const jsonFiles = readdirSync(`generated/${body.hash}/output/json`);
   const ipfsGateway = process.env.IPFS_GATEWAY;
 
+  const nfts = [];
   for (let i = 0; i < imageFiles.length; i++) {
     const imageFile = `generated/${body.hash}/output/images/${imageFiles[i]}`;
     const jsonFile = `generated/${body.hash}/output/json/${jsonFiles[i]}`;
@@ -77,7 +79,13 @@ export const uploadFilesToIpfs = async (body: Project, nftStorageToken) => {
     };
 
     console.log(nft);
-    await addNFT(body, nft);
+
+    nfts.push(nft);
+
+    body.nfts = JSON.stringify(nfts);
+
+    repo.save(body);
+
     rmSync(imageFile);
     rmSync(jsonFile);
   }
@@ -85,5 +93,5 @@ export const uploadFilesToIpfs = async (body: Project, nftStorageToken) => {
   body.status = Status.COMPLETED;
   body.statusMessage = '';
 
-  editProject(body);
+  repo.save(body);
 };

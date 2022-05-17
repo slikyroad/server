@@ -1,13 +1,15 @@
 import { recoverPersonalSignature } from '@metamask/eth-sig-util';
 import { Injectable, Logger } from '@nestjs/common';
-import { createReadStream, mkdirSync, rename, rmSync, writeFileSync } from 'fs';
-import { editProject, getProject } from 'src/db';
-import { Stage, Status } from 'src/models';
+import { mkdirSync, rmSync } from 'fs';
+import { Stage, Status } from 'src/dtos';
+import { ProjectService } from 'src/project/project.service';
 import { Readable } from 'stream';
 import { Extract } from 'unzipper';
 
 @Injectable()
 export class LayersService {
+  constructor(private projectService: ProjectService) {}
+
   private readonly logger = new Logger(LayersService.name);
 
   uploadLayersFile(file: Express.Multer.File, body: any): Promise<string> {
@@ -29,7 +31,7 @@ export class LayersService {
         return;
       }
 
-      let dbProject = await getProject(hash, wallet, signature);
+      const dbProject = await this.projectService.findProject(hash, wallet, signature);
 
       if (!dbProject) {
         reject('Can not find project');
@@ -38,8 +40,8 @@ export class LayersService {
 
       dbProject.stage = Stage.UPLOAD_LAYERS_FILE;
       dbProject.status = Status.PENDING;
-      dbProject.statusMessage = "";
-      await editProject(dbProject);
+      dbProject.statusMessage = '';
+      await this.projectService.updateProject(dbProject);
 
       const projectDir = `generated/${hash}`;
       const layersDir = `${projectDir}/layers`;
@@ -47,12 +49,12 @@ export class LayersService {
       rmSync(layersDir, { recursive: true, force: true });
       mkdirSync(layersDir);
 
-      const readStream = Readable.from(file.buffer);      
+      const readStream = Readable.from(file.buffer);
 
       readStream.pipe(Extract({ path: layersDir }));
-      readStream.on('close', () => {        
+      readStream.on('close', () => {
         dbProject.status = Status.COMPLETED;
-        editProject(dbProject);
+        this.projectService.updateProject(dbProject);
       });
 
       resolve('File uploaded successfully. Status is PENDING');
