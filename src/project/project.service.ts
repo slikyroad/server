@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { cloneDeep } from 'lodash';
 import { CloudinaryLayerImages, Project, Stage, Status } from 'src/dtos';
 import axios from 'axios';
+import { parse } from 'path';
 
 @Injectable()
 export class ProjectService {
@@ -263,7 +264,14 @@ export class ProjectService {
     if (project) {
       const parsed = JSON.parse(project.project.toString());
       const mapped = { ...parsed, ...project };
+      mapped.price = parsed.price;
+      mapped.colllection = parsed.colllection;
       mapped.project = '';
+      try {
+        const nfts = JSON.parse(project.nfts.toString());
+        mapped.nfts = nfts;
+      } catch (_e) {}
+
       return mapped;
     }
 
@@ -287,7 +295,14 @@ export class ProjectService {
     return projects.map((project) => {
       const parsed = JSON.parse(project.project.toString());
       const mapped = { ...parsed, ...project };
-      mapped.project = project.project.toString();
+      mapped.price = parsed.price;
+      mapped.colllection = parsed.colllection;
+      mapped.project = '';
+      try {
+        const nfts = JSON.parse(project.nfts.toString());
+        mapped.nfts = nfts;
+      } catch (_e) {}
+
       return mapped;
     });
   }
@@ -297,7 +312,13 @@ export class ProjectService {
     return projects.map((project) => {
       const parsed = JSON.parse(project.project.toString());
       const mapped = { ...parsed, ...project };
-      mapped.project = project.project.toString();
+      mapped.price = parsed.price;
+      mapped.colllection = parsed.colllection;
+      mapped.project = '';
+      try {
+        const nfts = JSON.parse(project.nfts.toString());
+        mapped.nfts = nfts;
+      } catch (_e) {}
       return mapped;
     });
   }
