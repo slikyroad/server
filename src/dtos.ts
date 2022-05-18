@@ -49,16 +49,17 @@ export interface Project {
   colllection: string;
   cloudinaryFiles: Array<CloudinaryLayerImages>;
   layersList: string;
+  project: string;
 }
 
 export interface CloudinaryLayerImages {
   layerName: string;
   layerImages: Array<string>;
+  originalFileNames: Array<string>;
 }
 
 export enum Stage {
   NEW_PROJECT,
-  UPLOAD_LAYERS_FILE,
   GENERATE_NFTS,
   UPLOAD_TO_IPFS,
 }
