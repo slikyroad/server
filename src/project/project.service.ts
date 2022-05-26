@@ -6,15 +6,31 @@ import { DBProject } from 'src/models/project.model';
 import { callTerminal, uploadFilesToIpfs } from 'src/project/utils/utils';
 import { Repository } from 'typeorm';
 import { cloneDeep } from 'lodash';
-import { CloudinaryLayerImages, Project, Stage, Status } from 'src/dtos';
+import { CloudinaryLayerImages, NftBought, Project, Stage, Status } from 'src/dtos';
 import axios from 'axios';
-import { parse } from 'path';
+import { UserCollection } from 'src/models/user.collection.model';
 
 @Injectable()
 export class ProjectService {
   private readonly logger = new Logger(ProjectService.name);
   @InjectRepository(DBProject)
   private projectRepository: Repository<DBProject>;
+  @InjectRepository(UserCollection)
+  private userCollectionRepository: Repository<UserCollection>;
+
+  nftBought(data: NftBought): Promise<UserCollection> {
+    return new Promise(async (resolve, _reject) => {
+      const userCollection: UserCollection = { ...data };
+      resolve(this.userCollectionRepository.save(userCollection));
+    });
+  }
+
+  getUserNfts(wallet: string): Promise<UserCollection[]> {
+    return new Promise(async (resolve, _reject) => {
+      const userNfts = this.userCollectionRepository.createQueryBuilder('userCollection').where('wallet = :wallet', { wallet: wallet }).getMany();
+      resolve(userNfts);
+    });
+  }
 
   editProject(project: Project): Promise<string> {
     project.project = '';
@@ -130,6 +146,7 @@ export class ProjectService {
       dbProject.statusMessage = '';
       dbProject.nfts = '';
       dbProject.colllection = '';
+      dbProject.project = JSON.stringify(body);
       await this.updateProject(dbProject);
 
       resolve('Project reset successfully');

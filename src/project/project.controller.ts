@@ -48,4 +48,16 @@ export class ProjectController {
     const response = await this.service.uploadToIPFS(body);
     return ResponseUtils.getSuccessResponse([], response);
   }
+
+  @Post('nft-bought')
+  async nftBought(@Body() body: any): Promise<Response> {
+    const response = await this.service.nftBought(body);
+    return ResponseUtils.getSuccessResponse(response, '');
+  }
+
+  @Get('user-nfts/:wallet')
+  async getUserNfts(@Param('wallet') wallet: string) {
+    const response = await this.service.getUserNfts(wallet);
+    return ResponseUtils.getSuccessResponse(response, '');
+  }
 }

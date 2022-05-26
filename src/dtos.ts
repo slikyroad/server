@@ -69,3 +69,9 @@ export enum Status {
   COMPLETED,
   FAILED,
 }
+
+export interface NftBought {
+  wallet: string;
+  collection: string;
+  tokenId: number;
+}
